@@ -6,17 +6,22 @@
 import UIKit
 import Nuke
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+
+
+    @IBOutlet weak var tableView: UITableView!
+    var posts: [Post] = []
 
 
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Tumblr Photos"
         
+        tableView.dataSource = self
+        tableView.delegate = self
+        
         fetchPosts()
     }
-
-
 
     func fetchPosts() {
         let url = URL(string: "https://api.tumblr.com/v2/blog/humansofnewyork/posts/photo?api_key=1zT8CiXGXFcQDyMFG7RtcfGLwTdDjFUJnZzKJaWTmgyK4lKGYk")!
@@ -41,11 +46,13 @@ class ViewController: UIViewController {
 
                 DispatchQueue.main.async { [weak self] in
 
-                    let posts = blog.response.posts
+                    self?.posts = blog.response.posts
+                    self?.tableView.reloadData()
 
 
-                    print("✅ We got \(posts.count) posts!")
-                    for post in posts {
+
+                    print("✅ We got \(self?.posts.count) posts!")
+                    for post in self.posts {
                         print("🍏 Summary: \(post.summary)")
                     }
                 }
@@ -55,5 +62,25 @@ class ViewController: UIViewController {
             }
         }
         session.resume()
+        
+        
+    }
+}
+
+extension ViewController {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return posts.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let post = posts[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: "PhotoCell", for: indexPath)
+
+        if let photo = post.photos.first {
+            let url = photo.originalSize.url
+            Nuke.loadImage(with: url, into: cell.imageView!)
+        }
+
+        return cell
     }
 }
